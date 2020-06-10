@@ -20,7 +20,7 @@ public class JavaFilterExampleTest {
         String sourceField = "foo";
         Configuration config = new ConfigurationImpl(Collections.singletonMap("source", sourceField));
         Context context = new ContextImpl(null);
-        JavaFilterExample filter = new JavaFilterExample("test-id", config, context);
+        JavaFilterExample filter = new JavaFilterExample("IVDemo-id", config, context);
 
         Event e = new org.logstash.Event();
         TestMatchListener matchListener = new TestMatchListener();
