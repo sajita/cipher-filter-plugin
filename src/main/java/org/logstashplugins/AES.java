@@ -10,11 +10,19 @@ import java.util.Random;
 
 public class AES {
 
-    public static String encrypt(String plaintext, String key) {
+    public static String encrypt(String plaintext, String key, String iv_raw, boolean random) {
         try {
-            // Generate a random 16-byte initialization vector
-            byte initVector[] = new byte[16];
-            (new Random()).nextBytes(initVector);
+
+            byte[] initVector = new byte[16];
+            if (random) {
+                // Generate a random 16-byte initialization vector
+                (new Random()).nextBytes(initVector);
+            } else {
+                initVector = iv_raw.getBytes();
+                plaintext = iv_raw + plaintext;
+
+            }
+
             IvParameterSpec iv = new IvParameterSpec(initVector);
 
             // prep the key
@@ -24,17 +32,11 @@ public class AES {
             Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
             cipher.init(Cipher.ENCRYPT_MODE, skeySpec, iv);
 
-            // Encode the plaintext as array of Bytes
+//            // Encode the plaintext as array of Bytes
             byte[] cipherbytes = cipher.doFinal(plaintext.getBytes());
 
-            // Build the output message initVector + cipherbytes -> base64
-            byte[] messagebytes = new byte[initVector.length + cipherbytes.length];
-
-            System.arraycopy(initVector, 0, messagebytes, 0, 16);
-            System.arraycopy(cipherbytes, 0, messagebytes, 16, cipherbytes.length);
-
             // Return the cipherbytes as a Base64-encoded string
-            return Base64.getEncoder().encodeToString(messagebytes);
+            return Base64.getEncoder().encodeToString(cipherbytes);
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -46,9 +48,9 @@ public class AES {
         try {
             byte[] cipherbytes = Base64.getDecoder().decode(ciphertext);
 
-            byte[] initVector = Arrays.copyOfRange(cipherbytes,0,16);
+            byte[] initVector = Arrays.copyOfRange(cipherbytes, 0, 16);
 
-            byte[] messagebytes = Arrays.copyOfRange(cipherbytes,16,cipherbytes.length);
+            byte[] messagebytes = Arrays.copyOfRange(cipherbytes, 16, cipherbytes.length);
 
             IvParameterSpec iv = new IvParameterSpec(initVector);
             SecretKeySpec skeySpec = new SecretKeySpec(key.getBytes("UTF-8"), "AES");

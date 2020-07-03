@@ -1,104 +1,96 @@
 package org.logstashplugins;
 
 import co.elastic.logstash.api.*;
+import org.apache.commons.lang3.StringUtils;
 
-import javax.crypto.Cipher;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 
 // class name must match plugin name
 @LogstashPlugin(name = "java_filter_example")
 public class JavaFilterExample implements Filter {
 
     public static final PluginConfigSpec<String> SOURCE_CONFIG =
-            PluginConfigSpec.stringSetting("source", "from_host");
-    public static final PluginConfigSpec<String> SOURCE_CONFIG1 =
-            PluginConfigSpec.stringSetting("source", "from_host_encrypted");
-    public static final PluginConfigSpec<String> SOURCE_CONFIG2 =
-            PluginConfigSpec.stringSetting("source", "from_host_decrypted");
+            PluginConfigSpec.stringSetting("source", "source_message");
 
+    public static final PluginConfigSpec<String> TARGET_CONFIG =
+            PluginConfigSpec.stringSetting("target", "target_message");
+
+
+    public static final PluginConfigSpec<String> KEY_FIELD =
+            PluginConfigSpec.stringSetting("key", "key123");
+
+    public static final PluginConfigSpec<String> IV_FIELD =
+            PluginConfigSpec.stringSetting("iv", "iv123");
 
     private String id;
     private String sourceField;
-    private String sourceField1;
-    private String sourceField2;
+    private String keyField;
+    private String targetField;
+    private String iv;
 
     public JavaFilterExample(String id, Configuration config, Context context) {
         // constructors should validate configuration options
         this.id = id;
         this.sourceField = config.get(SOURCE_CONFIG);
-        this.sourceField1 = config.get(SOURCE_CONFIG1);
-        this.sourceField2 = config.get(SOURCE_CONFIG2);
+        this.keyField = config.get(KEY_FIELD);
+        this.targetField = config.get(TARGET_CONFIG);
+        this.iv = config.get(IV_FIELD);
     }
 
     @Override
- /* public Collection<Event> filter(Collection<Event> events, FilterMatchListener matchListener) {
-        for (Event e : events) {
-            Object f = e.getField(sourceField1);
-            if (f instanceof String) {
-                try {
-                    Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-                    SecretKeySpec key = new SecretKeySpec("12345678901234567890123456789012".getBytes(), "AES");
-                    cipher.init(Cipher.ENCRYPT_MODE, key, new IvParameterSpec("1234567890123456".getBytes()));
-                    e.setField(sourceField1, cipher.doFinal(((String) f).getBytes()).toString());
-                    matchListener.filterMatched(e);
-
-                } catch (Exception e1) {
-                    e1.printStackTrace();
-                }
-            }
-        }
-         return events;*/
-
     public Collection<Event> filter(Collection<Event> events, FilterMatchListener matchListener) {
-        for (Event e : events) {
-            Object f = e.getField(sourceField);
-            //Object f1 = e.getField((sourceField1));
-           // Object f2 = e.getField((sourceField2));
-            if (f instanceof String) {
-                try {
-                    // byte[] data= IVDemo.encrypt(f.toString(),"26-ByteSharedKey".getBytes());
-                    //String decrypt_data = IVDemo.decrypt(data,"26-ByteSharedKey".getBytes());
+        try {
+            for (Event e : events) {
+                //System.out.println("##################################################################");
+                //System.out.println(SOURCE_CONFIG);
+                //System.out.println(e);
 
-                   /* Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-                    Cipher cipher1 = Cipher.getInstance("AES/CBC/PKCS5Padding");
-                    SecretKeySpec key = new SecretKeySpec("12345678901234567890123456789012".getBytes(), "AES");
-                    cipher.init(Cipher.ENCRYPT_MODE, key, new IvParameterSpec("1234567890123456".getBytes()));
-                    cipher1.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec("1234567890123456".getBytes()));*/
-                    //StringBuilder sb = new StringBuilder();
-                    //for (int i=0; i<data.length; i++) sb.append(new Integer(data[i]));
+               /* e.getData().keySet().forEach((key) -> {
+                  *//*  System.out.println(key);
+                    if (key.equals("userId")){
+                        System.out.println("userId exist");
+                    }
+                });
+                System.out.println("\n \n ############################# " + sourceField + " ############################# \n \n");
+                System.out.println("\n \n ############################# " + sourceField.equals("userId") + " ############################# \n \n");
+                System.out.println("\n \n ############################# " +  e.getData().containsKey(sourceField) + " ############################# \n \n");
+                System.out.println("\n \n ############################# " + e.getData().containsKey("userId") + " ############################# \n \n");*/
+                Object f = e.getField(sourceField);
 
-                    //e.setField(sourceField1, Arrays.toString(data));
-                    //e.setField(sourceField, decrypt_data);
-                    //AES aes = new AES();
-                    //String a =   AES.encrypt((String) f, "12345678901234567890123456789012") ;
-                    String data =   AES.encrypt((String) f, "12345678901234567890123456789012") ;
-                    //e.setField(sourceField1, a);
-                    e.setField(sourceField2, AES.decrypt(data,"12345678901234567890123456789012"));
-                    e.setField(sourceField1, data);
+                //System.out.println(f.toString());
+                String encrypted_text = AES.encrypt((String) f, keyField, iv, false);
+                if (f != null) {
+                    e.setField(sourceField, f);
+                    e.setField(targetField, encrypted_text);
                     matchListener.filterMatched(e);
 
-                } catch (Exception e1) {
-                    e1.printStackTrace();
+                }
+                if (f == null) {
+                    throw new Exception("########### Incorrect Source Field ##########");
                 }
             }
+            return events;
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-
-        return events;
+        return null;
     }
 
     @Override
     public Collection<PluginConfigSpec<?>> configSchema() {
         // should return a list of all configuration options for this plugin
-        return Collections.singletonList(SOURCE_CONFIG1);
-
+        Collection<PluginConfigSpec<?>> col = new ArrayList<>();
+        col.add(SOURCE_CONFIG);
+        col.add(TARGET_CONFIG);
+        col.add(KEY_FIELD);
+        col.add(IV_FIELD);
+        return col;
     }
 
     @Override
     public String getId() {
         return this.id;
     }
+
 }
